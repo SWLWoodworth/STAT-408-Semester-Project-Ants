@@ -1,0 +1,83 @@
+---
+title: "Ants Data Analysis: STAT 408 Semester Project"
+author: "Saul Woodworth"
+format: html
+editor: visual
+---
+
+## Introduction
+
+Ants are unique...\[NEED TO GIVE GOOD INTRO + MOTIVATION\]
+
+## Running Code
+
+```{r}
+#| output: False
+
+#if any of these need to be downloaded, use the following:
+#install.packages("PACKAGENAME")
+
+library(tidyverse)
+library(readr) 
+library(mosaic)
+library(dplyr)
+```
+
+The data itself is stored as a comma separated values file, which we can read into R and look at using the following:
+
+```{r}
+ants = read.csv("Ants.csv")
+glimpse(ants)
+
+```
+
+As we can see from glimpsing the data, any null values are labeled with `-` symbol. Furthermore, much of the number-based data columns are being read in as string data and the column `Morphism_0Mono_1Poly`, which is a binary data type, is being read as numeric. Based on this output, there is a good amount of data cleaning to do.
+
+## Cleaning the Data
+
+We want to preserve the altered data, thus it will be given the same name that we first used to read in the data frame. When looking at the glimpsed data, we can see that every column numeric-intended column that was read in as a string was because `-` was used for NA values. R cannot readily interpret `-` as NA, and will thus read in any column with even just one of these symbolas as a string. We will also need to convert the numeric-intended data to numeric data. Since all the numeric data contains `-`, it will be easier to delineate string NA values and then convert to numeric.
+
+The simplest way to convert the `-` is to reread the data in and add `na.strings = "-"` to let R know what we want `NA` values to be read in as.
+
+```{r}
+ants = read.csv("Ants.csv", na.strings = "-")
+```
+
+Once this is done, R should recognized the numeric-intended columns as numeric data. If it does not automatically do this,
+
+```{r}
+ants = ants |> 
+  mutate(
+    ColonySize_Median = as.numeric(ColonySize_Median), 
+    QHeadWidth_mm = as.numeric(QHeadWidth.mm.),
+    QMandibleLngth_mm = as.numeric(QMandibleLength.mm.)
+  )
+```
+
+**Now we can also convert the binary data to strings. Also, the binary column names work to delineate the data in its binary form, but we can change the name of the columns to be more qualitative. In doing so, we can change what the observation is recorded as; instead of reading several 0's and 1's, we can instead replace these with "mono" and "poly".**
+
+```{r}
+ants = ants |>
+  mutate(
+    work_morph = case_when(
+      Morphism_0Mono_1Poly == 0 ~ "monomorphic",
+      Morphism_0Mono_1Poly == 1 ~ "polymorphic"
+    )
+  ) |>
+  mutate(
+    Queen_morph = case_when(
+      QinColony_0Mon_1Poly == 0 ~ "monomorphic",
+      QinColony_0Mon_1Poly == 1 ~ "polymorphic"
+    )
+  )
+```
+
+From looking at the data now, we have some redundant columns because we created new columns from preexisting ones. The last thing we really need to do is to select just the desired columns that we cleaned and the new ones we created. This will make displaying the data visually more appealing.
+
+```{r}
+ants = ants |>
+  select(Genus_Species, Subfamily, Diet, Nesting_strata, ColonySize_Median, HeadWidth.mm., MandibleLength.mm., ColDimorphism, LogColsize, QHeadWidth_mm, QMandibleLngth_mm, work_morph, Queen_morph)
+
+```
+
+## Preparing for Visualization and Analysis
